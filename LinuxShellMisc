@@ -1,0 +1,489 @@
+set path = ( $path /afs/crc.nd.edu/user/g/gragland/bin )
+bwa index -a bwtsw fakegenome.fa
+bwa aln fakegenome.fa TrimmedSeqs.fastq > aln_sa.sai
+bwa samse fakegenome.f aln_sa.sai TrimmedSeqs.fastq > aln.sam
+
+set path = ( $path /afs/crc.nd.edu/user/g/gragland/bin )
+#import sam alignment to .bam format
+samtools view -bS aln.sam > aln.bam
+samtools faidx fakegenome.fa
+samtools sort aln.bam aln.sorted
+samtools mpileup -uf fakegenome.fa aln.bam -d 500  | bcftools view -bvcg - > var.raw.bcf
+bcftools view var.raw.bcf | vcfutils.pl varFilter -e -d10 > var.hwe.vcf
+
+samtools view aln.sorted.bam > aln.sorted.sam   
+
+process_radtags -f s_8_ND_2_7_lib.txt -b Barcodes_10 -o ./stacks -e ecoRI -q -E phred33 -D
+
+ustacks -t fastq -f /afs/crc.nd.edu/user/g/gragland/Public/TrimmedSeqs.fastq -o ./stacks -d -r -m 10 -p 2  
+
+
+
+fs listquota -human
+
+
+#perl one-liner to change stacks tags output to fasta file
+# the incrementing of $i doesn't work in this context; used $. instead
+perl -e '$i=1;' -n -e '$_ =~ s/^.*consensus\s+(\w+)\s+.*/>contig$.\n$1/; $i++; print "$_"' NonRepetitive.consensus.tags.tsv > NonRepetitive.consensus.fa
+or
+perl -ne 's/^.*consensus\s+(\w+)\s+.*/>contig$.\n$1/; print "$_"'
+# NonRepetitive.consensus.tags.tsv > NonRepetitive.consensus.fa
+
+
+
+grep ">" new_fake.fas | wc -l
+
+split -dl 30617 ContigList.txt SplitContigList
+
+# delete a bunch of submitted jobs
+qstat -u gragland | grep "^ 22" | sed 's/ 5\..*//' | sed 's/ //' | xargs qdel
+
+
+
+grep ">" new_fake.fas | perl -ne 's/>(\S+).*/$1/;print $_' >
+ContigList.txt
+
+
+#GATK combine variants, after scattered genotyping, i.e., step in
+ scatter-gather approach
+
+java -Xmx8g -jar /afs/crc.nd.edu/user/g/gragland/bin/GenomeAnalysisTK-2.1-13-g1706365/GenomeAnalysisTK.jar \
+   -R ../new_fake.fa \
+   -T CombineVariants \
+   --variant snps.GATK.vcf.1.filtered.vcf \
+   --variant snps.GATK.vcf.2.filtered.vcf \
+   --variant snps.GATK.vcf.3.filtered.vcf \
+   --variant snps.GATK.vcf.4.filtered.vcf \
+   --variant snps.GATK.vcf.5.filtered.vcf \
+   --variant snps.GATK.vcf.6.filtered.vcf \
+   --variant snps.GATK.vcf.7.filtered.vcf \
+   --variant snps.GATK.vcf.8.filtered.vcf \
+   --variant snps.GATK.vcf.9.filtered.vcf \
+   --variant snps.GATK.vcf.10.filtered.vcf \
+   --variant snps.GATK.vcf.11.filtered.vcf \
+   -o snps.GATK.all.filtered.vcf
+
+
+
+grep "^Contig" snps.GATK.all.filtered.vcf | perl -ne
+'s/(^Contig\d+)\s+(\d+)\s.*/$1_$2/ ; print $_' > retainedContigs.txt 
+
+
+pimass-lin -g GATK_GenotypesForPiMASS.txt -p ResidPhenos.Pimass.txt -w 100 -s 1000 -o pimass.out -num 10
+
+
+
+
+cat tagmapping.txt | perl -ne 's/[^\w\d\_\t\n\.]//g;print $_' >
+temp.txt
+
+#NOTE: always need to re-sort after converting from .sam to .bam, so
+if there are early steps prior to .bam conversion, leave the sorting
+until the end
+samtools sort allcross_scott.bam allcross_scott.sorted.bam
+
+samtools view -h allcross_scott.sorted.bam > allcross_scott.sorted.sam 
+
+samtools view -bS allcross_scott.sorted.samples.sam > allcross_scott.sorted.samples.bam 
+
+
+#specify regions in file
+java -Xmx7g -jar /afs/crc.nd.edu/user/g/gragland/bin/GenomeAnalysisTK-2.1-13-g1706365/GenomeAnalysisTK.jar \
+   -R ../Scott_Selection/new_fake.fa \
+   -A DepthPerAlleleBySample \
+   -T UnifiedGenotyper \
+   -I ScottSelection.samples.aln.sorted.qual.bam \
+   -o snps.GATK.vcf \
+   -nt 4 \
+
+
+# have to rename first, if file names don't end in .vcf
+e.g., rename .filtered .filtered.vcf *.filtered
+
+
+java -Xmx8g -jar /afs/crc.nd.edu/user/g/gragland/bin/GenomeAnalysisTK-2.1-13-g1706365/GenomeAnalysisTK.jar \
+   -R /afs/crc.nd.edu/user/g/gragland/RAD_data/Scott_Selection/new_fake.fa \
+   -T CombineVariants \
+   --variant snps.GATK.1.filtered.vcf \
+   --variant snps.GATK.2.filtered.vcf \
+   --variant snps.GATK.3.filtered.vcf \
+   --variant snps.GATK.4.filtered.vcf \
+   --variant snps.GATK.5.filtered.vcf \
+   --variant snps.GATK.6.filtered.vcf \
+   --variant snps.GATK.7.filtered.vcf \
+   --variant snps.GATK.8.filtered.vcf \
+   --variant snps.GATK.9.filtered.vcf \
+   --variant snps.GATK.10.filtered.vcf \
+   --variant snps.GATK.11.filtered.vcf \
+   -o snps.GATK.ScottSelection.all.filtered.vcf
+
+
+
+samtools mpileup -uf DeNovoAssembly/LatestRadFakeGenome.fa bwa/aln.samples.sorted.bam -d 500 -r Contig19  | bcftools view -bvcg - > var.raw.bcf
+
+#removes everything that's not an alpha numeric character, a space or tab, a period, or underscore.
+sed 's/[^[:alnum:]|[:blank:]|.|_]//g'
+
+
+#give afs permisions for folder. NOTE: need to do this for the folder
+ and for the folder above it, for some reason. Here "ghood" is the
+ user name
+fs setacl /afs/crc.nd.edu/user/g/gragland/ ghood rliw
+
+#sheina's one-liner to remove all characters from a file except
+ numbers, letters, underscores, and "."
+sed 's/[^[:alnum:]|[:blank:]|.|_]//g'
+
+#so, I think above would need to go something like...
+cat trash.txt | sed 's/[^[:alnum:]|[:blank:]|.|_]//g' > file.out.txt
+
+#give permissions (in this case to user ssim) to current directory and
+all subdirectories...here the backticks make sure that "print"
+statement is evaluated before the rest of the command. Probably could
+do the same with xargs, or something similar
+cd /afs/crc.nd.edu/user/s/segan1/PDL/
+fs setacl -dir `find . -type d -print` -acl gragland rliw
+
+formatdb -t UniSprot -i stdin -p T -n UniSprot
+
+#list membership
+fs la <dirname>
+
+#To create a fs group
+pts creategroup -name gragland:federlab
+
+pts creategroup <name>
+#To add a user to a group
+pts adduser -user <user> -group <group>
+#list members
+pts membership <group>
+#e.g., one of my groups is "gragland:rad"
+
+
+java -Xmx7g -jar /afs/crc.nd.edu/user/g/gragland/bin/GenomeAnalysisTK-2.1-13-g1706365/GenomeAnalysisTK.jar \
+   -R male-genome.fasta \
+   -A DepthPerAlleleBySample \
+   -T UnifiedGenotyper \
+   -I 454Reads_CA.sorted.bam  \
+   -o CA.vcf \
+   -nt 4 
+
+#Get names from a fasta file and redirect to single-column file.
+grep "^>" male-genome.fasta | perl -ne '/^>(\S+)/;print "$1\n"' > contigs.txt
+
+
+#get read depth distribution from .vcf file
+perl -ne '/^Contig.*DP=(\d+)/; print "$1\n" if $1 > 1' snps.GATK.all.filtered.vcf > ReadDepthDist.txt
+
+#R session
+data<-read.table("ReadDepthDist.txt",header=F,row.names=NULL)
+
+#Get HWE info and count number of loci with p HWE < some cutoff (in Phred Scale)
+perl -ne '/^Contig.*HW=(\d+)/; print "$1\n" if $1 > 1' snps.ScottSelection.05-400-20.HWE.vcf | awk '$1 < 13' | wc -l
+perl -ne '/(^Contig\d+)\s.*HW=(\d+)/; print "$1\t$2\n" if $1 > 1' snps.ScottSelection.05-400-20.HWE.vcf
+
+#remove spaces and commas from fasta/fastq header
+ perl -ne '$_ =~ s/[ ,]/_/g if /^>/; print "$_"' LatestRadFakeGenome.fa > temp.fa
+
+#retrieve file from http site
+wget --tries=45 --no-check-certificate --user robertson --password dna
+http://www.life.illinois.edu/robertson/private/Rhagoletis_zephyria_031913_SOAP2_K49_GapCloser_db.tgz
+
+
+grep "[:space:][iso|con]tig" CA_aln2.sam | wc -l
+
+
+#view all master and slave processes in SGE (qsub)
+
+qstat -g t -u gragland
+
+
+
+blastall -p blastx -i test.fa \
+-o FakeG_toRhagGenome -d
+/afs/crc.nd.edu/user/g/gragland/BlastData/NR/NR -e 0.01 -m 7 -v 5 -b 5
+-a 8
+
+
+blastall -p blastx -i  -o FakeG_toRhagGenome.xml -d /afs/crc.nd.edu/user/g/gragland/BlastData/NR/NR -e 0.01 -m 7 -v 5 -b 5 -a 8 -F L
+
+#grep supporting perl regex
+pcregrep '^[^\@\+\n]' MpbLib1_1.resolved.trimmed.cut.fq | wc -l
+
+#for anonymous ftp, use 'ftp' as user name
+
+dmel-all-translation-r5.51.fasta.gz
+
+#this set command is necessry for classpath designation in tcsh; works fine in bash w/out it
+set nonomatch
+cd /afs/crc.nd.edu/user/g/gragland/bin/b2g4pipe
+ java -Xmx1g -cp *:ext/*: es.blast2go.prog.B2GAnnotPipe \
+      -in /afs/crc.nd.edu/user/g/gragland/RhagGenome/FakeG_toRhagGenome.xml \
+      -out results/RhagRadContigs \
+      -prop b2gPipe.properties \
+      -v -annot -dat -img -ips ipsr -annex -goslim -wiki html_template.html
+
+java -cp *:ext/*: es.blast2go.prog.B2GAnnotPipe -in 10_BlastResults_2011.xml -out results/myproject -prop b2gPipe.properties -v -annot -dat -img -ips ipsr -annex -goslim -wiki html_template.html
+
+      
+
+/afs/crc.nd.edu/group/genomics/illumina/mpfrender
+
+#get TLEN, template length fields from .sam file
+pcregrep '^[^\@]' MpbToGenomeShort.sam | cut -f9 > templateLengths.txt
+
+CA_to_AZ_CA_longestLen_Alignment.vcf | perl -ne '/\;DP=(\d+)/; print if $1 > 25' | wc -l
+
+perl -ne 'if (/^\#/) {print; next}; if (/0\/1\:[\d\,]+\:[\d\,]+\:(\d+)\:/) {print if $1 > 40}' CA_to_AZ_CA_longestLen_Alignment.vcf > CA_to_AZ_CA_longestLen_Alignment.GQ40.het.vcf
+
+#read data in R with funky characters
+data<-read.table("FakeG_toRhagGenome_UniSprot.anno.txt",sep="\t",header=T,stringsAsFactors=F,row.names=NULL,na.strings=NA,comment.char="",quote="\"")
+
+cd /afs/crc.nd.edu/user/g/gragland/RAD_data/MPB/Fastq
+seqtk sample -s 10 MpbLib1_1.resolved.trimmed.cut.fq 20000000 > SubSamp20milR1.fastq
+seqtk sample -s 10 MpbLib1_2.resolved.trimmed.cut.fq 20000000 > SubSamp20milR2.fastq
+
+
+9/25/2014
+#example bash for loops
+
+## loop through to create symbolic links to feed into STAR
+cd ~/rpom_seq/transcriptome/diapauseRNAseq/forward
+#deals with empty arrays
+shopt -s nullglob
+#create array of select file names called 'files'
+files=(*.fq.gz)
+counter=0
+#loop through all elements of 'files'
+for i in "${files[@]}"
+do 
+    ((counter+=1))
+    ln -s $i seqs.$counter.fq.gz.lnk
+done
+
+#loop with incremented variable 'i'
+for (( i=1; i<=$counter; i++ ))
+  do
+    echo $i
+  done
+
+#create symbolic file link NOTE: rm linke.name removes only the link, not the target
+ln -s <target.file> <linked.name>
+
+#assign output of bash fxn to variable
+var=$(echo $i)
+#bash arithmetic
+dif=$((var1-var2))
+#bash numeric conditional
+    if [ "$dif" -gt "0" ]; then
+        echo $fasfile
+    fi
+
+
+#use awk to print if column satisfies condition (piped to wc)
+awk '$7>5 {print $1}' Haw_Resp_AGTCAA_13_1.isoforms.results | wc -l
+
+
+#use wget with user and password, and retrieve all folders, subfolders, and files
+wget -r --no-parent --ftp-user F14FTSUSAT0514_LIBfpfR --ftp-password
+h07qs0Ie9 ftp://128.120.88.244
+
+wget --http-user robertson --http-password dna http://www.life.illinois.edu/robertson/private/Rhagoletis/jelly_061215_bigFirst_rename.fasta
+
+
+wget -r --no-parent --http-user robertson --http-password dna \
+http://www.life.illinois.edu/robertson/private/Rhagoletis/
+
+
+#install R packages
+
+#for bioconductor, use 'biocLite' in R. The following environmental variable needs to be changed, but it is in .bashrc
+R_HOME=$HOME/R
+#once this is set, can use 'install.packages()', which will install to R_HOME
+
+
+#R get percentile from emperical distribution function, e.g.
+dist<-rnorm(1000)
+ecdf(dist)(2)
+
+#tar.gz a folder
+tar -pczf name_of_your_archive.tar.gz /path/to/directory
+
+
+#web address to mangae shared folders on beocat
+https://account.beocat.cis.ksu.edu/project
+
+
+find . -type d -exec chown :ksu-ent-gragland {} \;
+find . -type d -exec chmod g+w {} \;
+chown :ksu-ent-gragland /homes/gragland/shared
+chmod g+w /homes/gragland/shared
+
+
+#The easiest way to set permissions to the group:
+
+chgrp -R ksu-ent-gragland $directory
+chmod g+w -R $directory
+find $directory -type d -exec chmod g+s {} \;
+
+That sets the group as sticky on the directory. Remember to replace
+$directory with the path to the directory that you want to change.
+
+
+STARTTIME=$(date +%s)
+
+blat Rhagoletis_SOAP2_071913_K49_GapCloser.fa new.fasta test.psl
+
+
+ENDTIME=$(date +%s)
+echo "Elapsed time: $(($ENDTIME - $STARTTIME)) ..."
+
+
+#in SGE '$NSLOTS' variable is number of processors requested
+
+#retrieve single sequence (can also do batch with file, or more than one like this by separating with commas) from blast database by accession
+blastdbcmd -db Rhagoletis_SOAP2_071913_K49_GapCloser -entry scaffold134971 -outfmt %f -out trash.fasta
+blastdbcmd -db Rhagoletis_SOAP2_071913_K49_GapCloser -entry scaffold11355 -outfmt %f -out trash.fasta
+
+
+#in perl '$ENV{HOME}' replaces the '~' in bash
+
+nona <- function (x,y) {
+    x[is.na(x)]=y
+    return(x)
+}
+data<-read.table('HawMinusApple.edgeR.annoWFisher.txt',header=T,row.names=NULL,stringsAsFactors=F,quote="\"",comment.char="",sep="\t")
+#create fisher exact test like so:
+	sig fold change	not sig fold change	sums
+sig snp	51	815	866
+not sig snp	81	2172	2253
+			3119
+#shows significant overlap b/t sig DE genes and genes with SNP
+    frequency differences
+
+
+
+#transfer file from one shell to another (after ssh into another
+ server)
+scp 140819_I1135_FCC5ANHACXX_L7_MPB_PLATE01_1.trimmed.cut.fq.gz beocat.cis.ksu.edu:/homes/gragland/Rad_data/MPB/Plate1
+scp PJM123.UG.GATK.all.filtered.vcf.gz beocat.cis.ksu.edu:/homes/gragland/shared/Rad_data/Rpom/eclosion
+scp vcfWalker.pm crcfe02.crc.nd.edu:/afs/crc.nd.edu/user/g/gragland/PerlLibs
+scp *.gz crcfe02.crc.nd.edu:/afs/crc.nd.edu/user/g/gragland/ext/blastDb/nt
+
+scp Project_Martin13/ gragland@beocat.cis.ksu.edu:/homes/gragland/shared/Rad_data/Ips/HiSeqJan2016
+
+scp dgeSept2015.R raglandlab@waters-52-231.dhcp.ksu.edu:/media/raglandlab/storage1/BeocatBackup/rpom_seq/transcriptome/diapauseRNAseq/edgeRout
+scp -r util
+raglandlab@waters-52-231.dhcp.ksu.edu:/media/raglandlab/storage1/bin/trinityUtils
+scp -r PerlLib raglandlab@waters-52-231.dhcp.ksu.edu:/media/raglandlab/storage1/bin/trinityUtils
+scp TrinityLongestIso.fasta
+gragland@beocat.cis.ksu.edu:/homes/gragland/rpom_seq/transcriptome/allDiapaueAnd454/trinity_out_dir
+scp -r dros20cond raglandlab@raglandlab-leapord.dynu.com:/media/raglandlab/storage1/BeocatBackup/compTranscriptomics/stress
+
+#for some reason I have to do it this way on a mac...
+scp gragland@crcfe02.crc.nd.edu:/afs/crc.nd.edu/user/g/gragland/RAD_data/Colias/RawReads/*.fq.gz .
+scp gragland@beocat.cis.ksu.edu:/homes/gragland/shared/rpomGenome L_RNA_scaffolder_usearch95_transdec100.fasta
+scp L_RNA_scaffolder_usearch95_transdec100.fasta gragland@beocat.cis.ksu.edu:/homes/gragland/shared/rpomGenome/
+scp ae.albopictus_oocyte_embryo_assembly_quality_filtered_contigs.fa raglandlab@raglandlab-leapord.dynu.com:/media/raglandlab/storage1/diapauseComp/sequence/aAlbopictus
+scp Bminax.fa raglandlab@raglandlab-leapord.dynu.com:/media/raglandlab/storage1/diapauseComp/sequence/bMinax
+
+
+#compress directory
+tar -zcvf forPete.tar.gz forPete/
+
+
+#delete all of a file type in all subdirectories, e.g.
+find . -name \*.bam* -type f -delete
+
+#get all of one file type
+wget -r --no-parent -A "nt.*.tar.gz" ftp://ftp.ncbi.nlm.nih.gov/blast//db 
+
+wget -r --no-parent --accept-regex 'nt.*.tar.gz' --regex-type='pcre' ftp://ftp.ncbi.nlm.nih.gov/blast//db 
+
+
+#untar/zip all matching files
+find . find . -name '*.gz' -exec tar -zxvf \;
+
+dustmasker -in nt -infmt blastdb -parse_seqids \
+  -outfmt maskinfo_asn1_bin -out nt_dust.asnb
+
+makeblastdb -in nt -input_type blastdb -dbtype nucl -parse_seqids \
+ -mask_data nt_dust.asnb -out nt_masked -title \
+ "nt_masked"
+
+thisFileName
+
+#concatenate sequential files in bash for, .e.g, ntBlastResults.1.xml
+cat ntBlastResults.{1..60}.xml > ntBlastResultsAll.xml
+
+
+#create bash function, then fork that function (ampersand)
+#$1, $2, etc. are input arguments
+function wcfas { grep '>' $1 | wc -l; }
+wcfas myfile.txt &
+
+#list beocat job stat from last 7 days
+kstat -d 7
+
+#use awk to print first column only
+awk '{print $1}'
+
+
+#retrieve range from single sequence from blast database
+blastdbcmd -db Rhagoletis_SOAP2_071913_K49_GapCloser -entry scaffold20693 -range 1-50 -outfmt %f
+
+
+'htop' good alternative to 'top', provides more readable units in Mb
+
+
+#find .r files modified within the last 300 days
+find . -name '*.r' -mtime -300
+
+force job to use my machines:
+
+-l forced_owned_queues
+
+
+#Use awk to print specific column
+
+awk '{ print $3 }' filename
+
+#force eject drive from mac, sometime necessary to correct mac fusion
+ problems
+ diskutil unmountDisk force /Volumes/DISK_NAME
+ 
+blastn -query test.fasta -db ~/BlastDB/nt/nt -evalue 0.01 \
+  -outfmt 5 -max_target_seqs 5 -num_threads 2 > test.xml
+
+
+./configure --prefix=~/bin
+make
+make test
+make install
+make clean
+
+#October 2015
+#fastqc no longer works with default java settings. need to run this
+#line first:
+eselect java-vm set user 3
+
+
+##bash script to execute ftp commands non-interactively
+## the -i flag suppresses interactive (prompts)
+#!/bin/sh
+ftp -ni ftp.backupte4.rsyncbackup.info << EOF
+quote USER bapte
+quote PASS b2p7Ua2
+put somefile
+quit
+EOF
+
+
+
+
+
+
+
+
+
+
