@@ -478,7 +478,23 @@ put somefile
 quit
 EOF
 
+#same as above, with sftp
+#!/bin/sh
+cd localDirectory
 
+HOST=ftp.host.org
+USER="username"
+PASSWD="password"
+
+lftp<<END_SCRIPT
+open sftp://$HOST
+user $USER $PASSWD
+cd remoteDir
+mput *.txt
+lcd otherRemoteDir
+mput *.txt
+bye
+END_SCRIPT
 
 
 
