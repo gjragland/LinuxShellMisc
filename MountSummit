@@ -3,6 +3,7 @@
 ##batch script to mount CU summit petalibrary
 #uses SSHFS on OSX
 ## NOTE: need to unmount after use with "sudo umount /Volumes/Summit"
+# change 'username' to summit user name
 
 mkdir /Volumes/Summit
 echo "Enter password for CU Summit:"
