@@ -6,4 +6,4 @@
 
 mkdir /Volumes/Summit
 echo "Enter password for CU Summit:"
-sshfs -o allow_other,defer_permissions grra3428@login.rc.colorado.edu:/work/raglandlab/ /Volumes/Summit
+sshfs -o allow_other,defer_permissions username@login.rc.colorado.edu:/work/raglandlab/ /Volumes/Summit
