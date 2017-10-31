@@ -1,0 +1,9 @@
+!/bin/bash
+
+##batch script to mount CU summit petalibrary
+#uses SSHFS on OSX
+## NOTE: need to unmount after use with "sudo umount /Volumes/Summit"
+
+mkdir /Volumes/Summit
+echo "Enter password for CU Summit:"
+sshfs -o allow_other,defer_permissions grra3428@login.rc.colorado.edu:/work/raglandlab/ /Volumes/Summit
