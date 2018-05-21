@@ -1,0 +1,16 @@
+mysql -u root -p
+
+show databases;
+
+use 
+
+show tables;
+
+select * from snpFisher3 limit 10;
+
+select ref from snpFisherurbana where (char_length(ref) > 1) limit 20;
+
+select * from PomUrbanaGrant.snpFisherurbana where scaffold like '%NW_016157%' limit 10;
+
+mysql -u root -p  PomUrbanaGrant -e "select * from snpFisherurbana" -B > poolseqSnpsUrbana.txt
+
