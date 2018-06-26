@@ -496,6 +496,11 @@ mput *.txt
 bye
 END_SCRIPT
 
+#start globus personal endpoint (need screen to keep it running)
+screen
+globusconnect -start
+
+
 
 
 
