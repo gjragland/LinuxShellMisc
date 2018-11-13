@@ -14,3 +14,4 @@ select * from PomUrbanaGrant.snpFisherurbana where scaffold like '%NW_016157%' l
 
 mysql -u root -p  PomUrbanaGrant -e "select * from snpFisherurbana" -B > poolseqSnpsUrbana.txt
 
+select * from feature_alias where Flybase_FBgn = 'FBgn0041622';
