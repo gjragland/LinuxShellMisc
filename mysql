@@ -1,3 +1,7 @@
+
+#start up
+sudo /etc/init.d/mysql start
+
 mysql -u root -p
 
 show databases;
