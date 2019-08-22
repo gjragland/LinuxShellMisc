@@ -500,8 +500,9 @@ END_SCRIPT
 screen
 globusconnect -start
 
-
-
+#chmod for permissions
+#give everyone read/write access to a folder
+chmod -R 0777 /mydirectory
 
 
 
