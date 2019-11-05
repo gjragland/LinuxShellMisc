@@ -508,5 +508,9 @@ chmod -R 0777 /mydirectory
 sudo chmod 0700 foldername/
 
 
+#add user, specify/create home directory, and specify shell (here, bash)
+sudo useradd -m -d /HOME_DIRECTORY_NAME -s $(which bash) USERNAME
+#set password
+sudo passwd USERNAME
 
 
