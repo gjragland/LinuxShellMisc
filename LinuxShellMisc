@@ -504,7 +504,8 @@ globusconnect -start
 #give everyone read/write access to a folder
 chmod -R 0777 /mydirectory
 
-
+#give only owner access to folder
+sudo chmod 0700 foldername/
 
 
 
