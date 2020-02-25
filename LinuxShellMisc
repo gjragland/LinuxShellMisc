@@ -513,4 +513,7 @@ sudo useradd -m -d /HOME_DIRECTORY_NAME -s $(which bash) USERNAME
 #set password
 sudo passwd USERNAME
 
+#find all files with extension in all subdirs and copy to folder
+#from https://stackoverflow.com/questions/15617016/copy-all-files-with-a-certain-extension-from-all-subdirectories
+find ./ -name '*.xsl' -exec cp -prv '{}' '/path/to/targetDir/' ';'
 
