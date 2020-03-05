@@ -517,3 +517,8 @@ sudo passwd USERNAME
 #from https://stackoverflow.com/questions/15617016/copy-all-files-with-a-certain-extension-from-all-subdirectories
 find ./ -name '*.xsl' -exec cp -prv '{}' '/path/to/targetDir/' ';'
 
+#start mysql server
+sudo /etc/init.d/mysql start
+
+#login to mysql server
+mysql -u root -p
