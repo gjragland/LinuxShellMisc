@@ -522,3 +522,20 @@ sudo /etc/init.d/mysql start
 
 #login to mysql server
 mysql -u root -p
+
+
+
+#make user member of restricted group (sftp access), and restrict login
+sudo groupadd restrictedGrp
+sudo useradd -m -d HOMEDIR -s /sbin/nologin -g restrictedGrp USERNAME
+sudo passwd USERNAME
+
+#to add to /etc/ssh/sshd_config
+#following 'Subsystem sftp internal-sftp' or similar...
+ 
+   Match Group restrictedGrp
+   ChrootDirectory /home
+   ForceCommand internal-sftp
+   X11Forwarding no
+   AllowTcpForwarding no
+   
