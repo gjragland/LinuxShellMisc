@@ -462,6 +462,8 @@ make test
 make install
 make clean
 
+#or make prefix=DIR install
+
 #October 2015
 #fastqc no longer works with default java settings. need to run this
 #line first:
