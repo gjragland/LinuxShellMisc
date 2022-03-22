@@ -541,3 +541,10 @@ sudo passwd USERNAME
    X11Forwarding no
    AllowTcpForwarding no
    
+   
+#groups
+sudo groupadd newGroup
+sudo usermod -a -G newGroup userName
+less /etc/group #view groups/membership
+sudo chown -R userName:newGroup myFolder #recursively change user and group ownership of directory and all contents
+chmod -R ug+rw myFolder #recursively add read and write permissions for user and group for directory and all contents
