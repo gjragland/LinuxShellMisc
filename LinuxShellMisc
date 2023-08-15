@@ -501,6 +501,10 @@ END_SCRIPT
 #start globus personal endpoint (need screen to keep it running)
 screen
 globusconnect -start
+or
+cd /home/raglandlab/globusconnectpersonal-3.2.2
+./globusconnectpersonal -start
+
 
 #chmod for permissions
 #give everyone read/write access to a folder
