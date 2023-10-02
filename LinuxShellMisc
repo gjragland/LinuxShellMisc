@@ -553,3 +553,8 @@ sudo usermod -a -G newGroup userName
 less /etc/group #view groups/membership
 sudo chown -R userName:newGroup myFolder #recursively change user and group ownership of directory and all contents
 chmod -R ug+rw myFolder #recursively add read and write permissions for user and group for directory and all contents
+
+
+#pass bash variable to perl one-liner:
+read2=`perl -e '$var=$ENV{read1}; $var =~ s/(R1_001.fastq.gz)/R2_001.fastq.gz/ ; print "$var"'`
+
