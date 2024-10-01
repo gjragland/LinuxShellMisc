@@ -558,3 +558,14 @@ chmod -R ug+rw myFolder #recursively add read and write permissions for user and
 #pass bash variable to perl one-liner:
 read2=`perl -e '$var=$ENV{read1}; $var =~ s/(R1_001.fastq.gz)/R2_001.fastq.gz/ ; print "$var"'`
 
+
+#install python libraries to user specified location
+#need to add lib direcotry to PYTHONPATH variable
+pip install --target /projects/grra3428/libs/pylibs scipy
+# add to .bashrc
+PYTHONPATH=/projects/grra3428/libs/pylibs:$PYTHONPATH
+
+
+
+
+
