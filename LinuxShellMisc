@@ -566,6 +566,12 @@ pip install --target /projects/grra3428/libs/pylibs scipy
 PYTHONPATH=/projects/grra3428/libs/pylibs:$PYTHONPATH
 
 
+#find package containing missing file, e.g., can't be found during config/compile
+#from https://stackoverflow.com/questions/12141422/error-gdal-config-not-found-while-installing-r-dependent-packages-whereas-gdal
+#e.g.,
+apt-file search gdal-config
+
+
 
 
 
